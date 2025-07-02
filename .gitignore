@@ -2,3 +2,6 @@
 **/*.rs.bk
 .sqlx/
 config.toml
+rss.db
+rss.db-shm
+rss.db-wal

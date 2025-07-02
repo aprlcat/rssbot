@@ -4,7 +4,7 @@ use anyhow::Result;
 use serenity::{
     all::{
         ActivityData, Command, CommandOptionType, CreateCommand, CreateInteractionResponse,
-        CreateInteractionResponseMessage, Interaction, OnlineStatus, Ready,
+        CreateInteractionResponseMessage, Interaction, OnlineStatus, Permissions, Ready,
     },
     async_trait,
     prelude::*,
@@ -100,6 +100,7 @@ impl EventHandler for Handler {
         let commands = vec![
             CreateCommand::new("add")
                 .description("Add an RSS feed to a channel")
+                .default_member_permissions(Permissions::MANAGE_GUILD)
                 .add_option(
                     serenity::all::CreateCommandOption::new(
                         CommandOptionType::String,
@@ -118,6 +119,7 @@ impl EventHandler for Handler {
                 ),
             CreateCommand::new("remove")
                 .description("Remove an RSS feed")
+                .default_member_permissions(Permissions::MANAGE_GUILD)
                 .add_option(
                     serenity::all::CreateCommandOption::new(
                         CommandOptionType::String,
@@ -158,7 +160,10 @@ async fn main() -> Result<()> {
 
     let mut client = Client::builder(
         &config.token,
-        GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT,
+        GatewayIntents::GUILD_MESSAGES
+            | GatewayIntents::MESSAGE_CONTENT
+            | GatewayIntents::GUILDS
+            | GatewayIntents::GUILD_MEMBERS,
     )
     .event_handler(Handler {
         database: database.clone(),

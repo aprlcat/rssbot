@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use serenity::{
-    all::{
-        CommandInteraction, CreateInteractionResponse, CreateInteractionResponseMessage,
-        Permissions,
-    },
+    all::{CommandInteraction, CreateInteractionResponse, CreateInteractionResponseMessage},
     prelude::*,
 };
 
@@ -16,10 +13,6 @@ pub async fn execute(
     command: &CommandInteraction,
     database: &Arc<Database>,
 ) -> Result<()> {
-    if !check_permissions(ctx, command).await? {
-        return Ok(());
-    }
-
     let url = extract_url(command)?;
     let guild_id = command.guild_id.unwrap().get();
     let removed = database.remove(guild_id, &url).await?;
@@ -31,33 +24,6 @@ pub async fn execute(
     };
 
     respond(command, &ctx.http, &content).await
-}
-
-async fn check_permissions(ctx: &Context, command: &CommandInteraction) -> Result<bool> {
-    if let Some(guild_id) = command.guild_id {
-        if let Ok(member) = guild_id.member(&ctx.http, command.user.id).await {
-            #[allow(deprecated)]
-            let permissions = member.permissions(&ctx.cache)?;
-            if !permissions.contains(Permissions::MANAGE_GUILD) {
-                let response = CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content("You need the **Manage Server** permission to remove RSS feeds.")
-                        .ephemeral(true),
-                );
-                command.create_response(&ctx.http, response).await?;
-                return Ok(false);
-            }
-        } else {
-            let response = CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Unable to verify your permissions.")
-                    .ephemeral(true),
-            );
-            command.create_response(&ctx.http, response).await?;
-            return Ok(false);
-        }
-    }
-    Ok(true)
 }
 
 fn extract_url(command: &CommandInteraction) -> Result<String> {

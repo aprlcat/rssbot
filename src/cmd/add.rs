@@ -4,7 +4,7 @@ use anyhow::Result;
 use serenity::{
     all::{
         CommandInteraction, CreateInteractionResponse, CreateInteractionResponseMessage,
-        EditInteractionResponse, Permissions,
+        EditInteractionResponse,
     },
     prelude::*,
 };
@@ -21,10 +21,6 @@ pub async fn execute(
     command: &CommandInteraction,
     database: &Arc<Database>,
 ) -> Result<()> {
-    if !check_permissions(ctx, command).await? {
-        return Ok(());
-    }
-
     let url = extract_url(command)?;
     let channel = extract_channel(command);
 
@@ -46,33 +42,6 @@ pub async fn execute(
 
     defer_response(command, &ctx.http).await?;
     process_feed(ctx, command, database, &url, guild_id, channel_id).await
-}
-
-async fn check_permissions(ctx: &Context, command: &CommandInteraction) -> Result<bool> {
-    if let Some(guild_id) = command.guild_id {
-        if let Ok(member) = guild_id.member(&ctx.http, command.user.id).await {
-            #[allow(deprecated)]
-            let permissions = member.permissions(&ctx.cache)?;
-            if !permissions.contains(Permissions::MANAGE_GUILD) {
-                let response = CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content("You need the **Manage Server** permission to add RSS feeds.")
-                        .ephemeral(true),
-                );
-                command.create_response(&ctx.http, response).await?;
-                return Ok(false);
-            }
-        } else {
-            let response = CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Unable to verify your permissions.")
-                    .ephemeral(true),
-            );
-            command.create_response(&ctx.http, response).await?;
-            return Ok(false);
-        }
-    }
-    Ok(true)
 }
 
 fn extract_url(command: &CommandInteraction) -> Result<String> {
