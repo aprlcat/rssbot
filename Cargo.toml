@@ -1,0 +1,50 @@
+[package]
+name = "rssbot"
+version = "0.1.0"
+edition = "2024"
+authors = ["April <april@aprl.cat>"]
+description = "A Discord bot for managing RSS feeds!"
+repository = "https://github.com/aprlcat/rssbot"
+readme = "README.md"
+keywords = ["discord", "rss", "bot", "feeds", "notifications"]
+rust-version = "1.87.0"
+
+[dependencies]
+serenity = { version = "0.12.4", features = ["client", "gateway", "rustls_backend", "model"] }
+tokio = { version = "1.45.1", features = ["full"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "migrate"] }
+reqwest = { version = "0.12.22", features = ["json"] }
+feed-rs = "2.3.1"
+serde = { version = "1.0.219", features = ["derive"] }
+toml = "0.8.23"
+tokio-cron-scheduler = "0.14.0"
+url = "2.5.4"
+chrono = { version = "0.4.41", features = ["serde"] }
+anyhow = "1.0.98"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+base64 = "0.22.1"
+scraper = "0.23.1"
+regex = "1.11.1"
+serde_json = "1.0.140"
+futures = "0.3.31"
+futures-util = "0.3.31"
+
+[dev-dependencies]
+tokio-test = "0.4.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+incremental = true
+
+[[bin]]
+name = "rssbot"
+path = "src/main.rs"

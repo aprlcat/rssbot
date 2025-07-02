@@ -1,0 +1,6 @@
+[bot]
+token = "your token :3"
+check_interval_minutes = 1
+
+[database]
+url = "sqlite:rss.db"
