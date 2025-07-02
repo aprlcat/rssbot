@@ -208,16 +208,22 @@ async fn handle_valid_feed(
                 )
                 .await?;
 
-            let feed_title = feed
+            let _feed_title = feed
                 .title
                 .as_ref()
                 .map(|t| t.content.as_str())
                 .unwrap_or("RSS Feed");
             let item_count = feed.entries.len();
 
+            let domain = if let Ok(parsed_url) = url::Url::parse(url) {
+                parsed_url.host_str().unwrap_or("Unknown").to_string()
+            } else {
+                "Unknown".to_string()
+            };
+
             let edit_response = EditInteractionResponse::new().content(format!(
-                "Successfully added **{}** to <#{}>\n{} items • {:.1}KB",
-                feed_title,
+                "Successfully added `{}` → <#{}> | {} items • {:.1}KB",
+                domain,
                 channel_id,
                 item_count,
                 content_size as f64 / 1024.0
