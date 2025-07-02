@@ -1,59 +1,73 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
+use futures::stream::{self, StreamExt};
 use reqwest::Client;
-use tracing::debug;
+use tokio::time::timeout;
 
-pub async fn fetch(url: &str) -> Result<String> {
+pub async fn single(url: &str) -> Result<String> {
     let client = Client::builder()
-        .timeout(Duration::from_secs(120))
+        .timeout(Duration::from_secs(30))
         .user_agent("Mozilla/5.0 RSS Bot")
         .build()?;
 
-    debug!("Fetching feed from: {}", url);
+    fetch(&client, url).await
+}
+
+pub async fn batch(urls: Vec<String>) -> Vec<Result<(String, String)>> {
+    let client = Arc::new(
+        Client::builder()
+            .timeout(Duration::from_secs(30))
+            .user_agent("Mozilla/5.0 RSS Bot")
+            .build()
+            .unwrap_or_default(),
+    );
+
+    stream::iter(urls)
+        .map(|url| {
+            let client = client.clone();
+            let url_clone = url.clone();
+            async move {
+                match timeout(Duration::from_secs(20), fetch(&client, &url)).await {
+                    Ok(Ok(content)) => Ok((url_clone, content)),
+                    Ok(Err(e)) => Err(e),
+                    Err(_) => Err(anyhow::anyhow!("Timeout")),
+                }
+            }
+        })
+        .buffer_unordered(50)
+        .collect()
+        .await
+}
+
+async fn fetch(client: &Client, url: &str) -> Result<String> {
     let response = client.get(url).send().await?;
 
     if !response.status().is_success() {
         return Err(anyhow::anyhow!("HTTP {}", response.status()));
     }
 
-    if let Some(content_length) = response.content_length() {
-        debug!("Feed content length: {} bytes", content_length);
-        if content_length > 50_000_000 {
-            return Err(anyhow::anyhow!("Feed too large: {} bytes", content_length));
-        }
+    let bytes = response.bytes().await?;
+    if bytes.len() > 5_000_000 {
+        return Err(anyhow::anyhow!("Feed too large: {} bytes", bytes.len()));
     }
 
-    let content = response.text().await?;
-
-    if content.len() > 50_000_000 {
-        return Err(anyhow::anyhow!(
-            "Feed content too large: {} bytes",
-            content.len()
-        ));
-    }
-
-    debug!("Successfully fetched feed, size: {} bytes", content.len());
-    Ok(content)
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
 pub async fn color(url: &str) -> Result<String> {
     let client = Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(3))
         .user_agent("Mozilla/5.0 RSS Bot")
         .build()?;
 
     let response = client.get(url).send().await?;
-
     if !response.status().is_success() {
         return Err(anyhow::anyhow!("HTTP {}", response.status()));
     }
 
     let html = response.text().await?;
-
-    let extracted_color = tokio::task::spawn_blocking(move || extract(&html)).await??;
-
-    Ok(extracted_color)
+    tokio::task::spawn_blocking(move || extract(&html)).await?
 }
 
 fn extract(html: &str) -> Result<String> {
@@ -61,20 +75,17 @@ fn extract(html: &str) -> Result<String> {
 
     let document = Html::parse_document(html);
 
-    let theme_color_selector = Selector::parse(r#"meta[name="theme-color"]"#).unwrap();
-    if let Some(element) = document.select(&theme_color_selector).next() {
-        if let Some(content) = element.value().attr("content") {
-            if let Ok(parsed_color) = validate(content) {
-                return Ok(parsed_color);
-            }
-        }
-    }
-
-    let theme_color_selector2 = Selector::parse(r#"meta[property="theme-color"]"#).unwrap();
-    if let Some(element) = document.select(&theme_color_selector2).next() {
-        if let Some(content) = element.value().attr("content") {
-            if let Ok(parsed_color) = validate(content) {
-                return Ok(parsed_color);
+    for selector in &[
+        r#"meta[name="theme-color"]"#,
+        r#"meta[property="theme-color"]"#,
+    ] {
+        if let Ok(sel) = Selector::parse(selector) {
+            if let Some(element) = document.select(&sel).next() {
+                if let Some(content) = element.value().attr("content") {
+                    if let Ok(color) = validate(content) {
+                        return Ok(color);
+                    }
+                }
             }
         }
     }
@@ -82,15 +93,16 @@ fn extract(html: &str) -> Result<String> {
     Err(anyhow::anyhow!("No theme color found"))
 }
 
-fn validate(color_str: &str) -> Result<String> {
-    let cleaned = color_str.trim().trim_start_matches('#');
+fn validate(color: &str) -> Result<String> {
+    let cleaned = color.trim().trim_start_matches('#');
 
-    if cleaned.len() == 6 && cleaned.chars().all(|c| c.is_ascii_hexdigit()) {
-        Ok(cleaned.to_uppercase())
-    } else if cleaned.len() == 3 && cleaned.chars().all(|c| c.is_ascii_hexdigit()) {
-        let expanded: String = cleaned.chars().map(|c| format!("{}{}", c, c)).collect();
-        Ok(expanded.to_uppercase())
-    } else {
-        Err(anyhow::anyhow!("Invalid color format"))
+    match cleaned.len() {
+        6 if cleaned.chars().all(|c| c.is_ascii_hexdigit()) => Ok(cleaned.to_uppercase()),
+        3 if cleaned.chars().all(|c| c.is_ascii_hexdigit()) => Ok(cleaned
+            .chars()
+            .flat_map(|c| [c, c])
+            .collect::<String>()
+            .to_uppercase()),
+        _ => Err(anyhow::anyhow!("Invalid color format")),
     }
 }

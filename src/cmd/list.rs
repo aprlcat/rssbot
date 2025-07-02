@@ -11,7 +11,7 @@ use serenity::{
 
 use crate::{
     data::Database,
-    util::{fetcher::fetch, parser::parse},
+    util::{fetcher, parser},
 };
 
 pub async fn execute(
@@ -87,8 +87,8 @@ fn extract_domain(url: &str) -> String {
 }
 
 async fn get_last_updated(url: &str) -> String {
-    match tokio::time::timeout(std::time::Duration::from_secs(5), fetch(url)).await {
-        Ok(Ok(content)) => match parse(&content) {
+    match tokio::time::timeout(std::time::Duration::from_secs(5), fetcher::single(url)).await {
+        Ok(Ok(content)) => match parser::parse(&content) {
             Ok(parsed_feed) => parsed_feed
                 .entries
                 .first()

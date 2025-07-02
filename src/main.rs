@@ -171,15 +171,17 @@ async fn main() -> Result<()> {
     .await?;
 
     let scheduler = JobScheduler::new().await?;
-    let db_clone = database.clone();
-    let http_clone = client.http.clone();
+
+    let interval_minutes = config.check_interval_minutes;
+    let db_for_job = database.clone();
+    let http_for_job = client.http.clone();
 
     scheduler
         .add(Job::new_async(
-            &format!("0 */{} * * * *", config.check_interval_minutes),
+            &format!("0 */{} * * * *", interval_minutes),
             move |_uuid, _l| {
-                let db = db_clone.clone();
-                let http = http_clone.clone();
+                let db = db_for_job.clone();
+                let http = http_for_job.clone();
                 Box::pin(async move {
                     if let Err(e) = check(db, http).await {
                         error!("Feed check error: {}", e);

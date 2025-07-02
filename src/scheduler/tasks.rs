@@ -1,79 +1,96 @@
 use std::{collections::HashSet, sync::Arc};
 
 use anyhow::Result;
+use futures::stream::{self, StreamExt};
 use serenity::{
     all::{CreateEmbed, ExecuteWebhook, Http},
     model::webhook::Webhook,
 };
-use tokio::time::{Duration, timeout};
+use tokio::{
+    sync::Semaphore,
+    time::{Duration, timeout},
+};
 use tracing::{error, info};
 use url::Url;
 
 use crate::{
-    data::Database,
-    util::{
-        fetcher::{color, fetch},
-        parser::parse,
-    },
+    data::{Database, models::Feed as DbFeed},
+    util::{fetcher, parser},
 };
 
 pub async fn check(database: Arc<Database>, http: Arc<Http>) -> Result<()> {
     let feeds = database.feeds().await?;
     info!("Checking {} feeds", feeds.len());
 
-    let batch_size = 5;
-    for chunk in feeds.chunks(batch_size) {
-        let tasks: Vec<_> = chunk
-            .iter()
-            .map(|feed| {
-                let feed = feed.clone();
-                let database = database.clone();
-                let http = http.clone();
+    let semaphore = Arc::new(Semaphore::new(50));
 
-                tokio::spawn(async move {
-                    let feed_check =
-                        timeout(Duration::from_secs(120), process(&feed, &database, &http));
+    let tasks: Vec<_> = feeds
+        .into_iter()
+        .map(|feed| {
+            let db = database.clone();
+            let http = http.clone();
+            let sem = semaphore.clone();
 
-                    match feed_check.await {
-                        Ok(Ok(_)) => {}
-                        Ok(Err(e)) => error!("Error checking feed {}: {}", feed.url, e),
-                        Err(_) => error!("Timeout checking feed: {}", feed.url),
-                    }
-                })
+            tokio::spawn(async move {
+                let _permit = sem.acquire().await.ok()?;
+                let result = timeout(Duration::from_secs(120), process(&feed, &db, &http)).await;
+
+                match result {
+                    Ok(Ok(count)) => Some((feed.url.clone(), Ok(count))),
+                    Ok(Err(e)) => Some((feed.url.clone(), Err(e))),
+                    Err(_) => Some((feed.url.clone(), Err(anyhow::anyhow!("Timeout")))),
+                }
             })
-            .collect();
+        })
+        .collect();
 
-        futures::future::join_all(tasks).await;
-        tokio::time::sleep(Duration::from_millis(2000)).await;
+    let results: Vec<_> = futures::future::join_all(tasks)
+        .await
+        .into_iter()
+        .filter_map(|r| r.ok().flatten())
+        .collect();
+
+    let success = results.iter().filter(|(_, r)| r.is_ok()).count();
+    let failed = results.iter().filter(|(_, r)| r.is_err()).count();
+
+    info!(
+        "Feed check complete: {} successful, {} failed",
+        success, failed
+    );
+
+    for (url, result) in results.iter().filter(|(_, r)| r.is_err()) {
+        if let Err(e) = result {
+            error!("Failed to check {}: {}", url, e);
+        }
     }
 
     Ok(())
 }
 
 pub async fn single(database: Arc<Database>, http: Arc<Http>, url: &str) -> Result<u32> {
-    if let Some(feed) = database.find(url).await? {
-        process(&feed, &database, &http).await
-    } else {
-        Err(anyhow::anyhow!("Feed not found: {}", url))
+    match database.find(url).await? {
+        Some(feed) => process(&feed, &database, &http).await,
+        None => Err(anyhow::anyhow!("Feed not found: {}", url)),
     }
 }
 
-async fn process(
-    feed: &crate::data::models::Feed,
-    database: &Database,
-    http: &Http,
-) -> Result<u32> {
+async fn process(feed: &DbFeed, database: &Database, http: &Http) -> Result<u32> {
     info!("Checking feed: {}", feed.url);
 
-    let content = fetch(&feed.url).await?;
-    let parsed_feed = parse(&content)?;
+    let content = match timeout(Duration::from_secs(30), fetcher::single(&feed.url)).await {
+        Ok(Ok(content)) => content,
+        Ok(Err(e)) => return Err(e),
+        Err(_) => return Err(anyhow::anyhow!("Timeout fetching feed")),
+    };
+
+    let parsed_feed = parser::parse(&content)?;
 
     let total_items = parsed_feed.entries.len();
     info!("Feed {} has {} total items", feed.url, total_items);
 
-    let mut new_items: u32 = 0;
+    let mut new_items = 0u32;
     let mut newest_posted_date: Option<String> = None;
-    let mut posted_items: HashSet<String> = HashSet::new();
+    let mut posted_items = HashSet::new();
 
     let items_to_check = if feed.last_item_date.is_some() {
         std::cmp::min(20, total_items)
@@ -200,11 +217,7 @@ fn identifier(entry: &feed_rs::model::Entry) -> String {
     hasher.finish().to_string()
 }
 
-async fn post(
-    feed: &crate::data::models::Feed,
-    entry: &feed_rs::model::Entry,
-    http: &Http,
-) -> Result<()> {
+async fn post(feed: &DbFeed, entry: &feed_rs::model::Entry, http: &Http) -> Result<()> {
     let webhook_url = feed
         .webhook_url
         .as_ref()
@@ -241,7 +254,7 @@ async fn post(
     let url = entry.links.first().map(|l| l.href.clone());
 
     let embed_color = if let Some(link) = &url {
-        match timeout(Duration::from_secs(5), color(link)).await {
+        match timeout(Duration::from_secs(5), fetcher::color(link)).await {
             Ok(Ok(color_str)) => u32::from_str_radix(&color_str, 16).unwrap_or(0xb4befe),
             _ => 0xb4befe,
         }
