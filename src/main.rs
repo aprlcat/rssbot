@@ -85,6 +85,11 @@ impl EventHandler for Handler {
                         self.update(&ctx).await;
                         result
                     }
+                    "setup" => {
+                        let result = cmd::setup::execute(&ctx, &command, &self.database).await;
+                        self.update(&ctx).await;
+                        result
+                    }
                     _ => Ok(()),
                 };
 
@@ -108,7 +113,23 @@ impl EventHandler for Handler {
                         cmd::list::handle_component(&ctx, &component, &self.database).await
                     {
                         error!("Component interaction error: {}", e);
-
+                        let _ = component
+                            .create_followup(
+                                &ctx.http,
+                                CreateInteractionResponseFollowup::new()
+                                    .content(
+                                        "An error occurred while processing your request. Please \
+                                         try again.",
+                                    )
+                                    .ephemeral(true),
+                            )
+                            .await;
+                    }
+                } else if component.data.custom_id.starts_with("setup_") {
+                    if let Err(e) =
+                        cmd::setup::handle_component(&ctx, &component, &self.database).await
+                    {
+                        error!("Setup component interaction error: {}", e);
                         let _ = component
                             .create_followup(
                                 &ctx.http,
@@ -232,6 +253,9 @@ impl EventHandler for Handler {
                     )
                     .required(false),
                 ),
+            CreateCommand::new("setup")
+                .description("Interactive setup for RSS feeds with categories and channels")
+                .default_member_permissions(Permissions::MANAGE_GUILD),
         ];
 
         if let Err(e) = Command::set_global_commands(&ctx.http, commands).await {

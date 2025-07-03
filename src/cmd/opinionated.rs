@@ -14,17 +14,17 @@ use tracing::{error, info};
 use crate::data::Database;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct OpinionatedFeed {
-    name: String,
-    url: String,
+pub struct OpinionatedFeed {
+    pub name: String,
+    pub url: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    description: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct OpinionatedCollection {
-    topic: String,
-    feeds: Vec<OpinionatedFeed>,
+pub struct OpinionatedCollection {
+    pub topic: String,
+    pub feeds: Vec<OpinionatedFeed>,
 }
 
 pub async fn execute(
@@ -175,7 +175,7 @@ fn extract_channel(command: &CommandInteraction) -> serenity::model::id::Channel
         .unwrap_or(command.channel_id)
 }
 
-async fn load_collection(topic: &str) -> Result<OpinionatedCollection> {
+pub async fn load_collection(topic: &str) -> Result<OpinionatedCollection> {
     let opinionated_dir = std::path::Path::new("opinionated");
 
     if !opinionated_dir.exists() {
