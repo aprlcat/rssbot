@@ -188,7 +188,7 @@ async fn categories(
     let embed = CreateEmbed::new()
         .title("RSS Feed Setup")
         .description("Select where to organize your RSS feeds")
-        .color(0x7289da);
+        .color(0x89b4fa);
 
     let components = vec![CreateActionRow::SelectMenu(select_menu)];
     let response = EditInteractionResponse::new()
@@ -260,7 +260,7 @@ async fn topics(
         .description("Choose the RSS feed topics you want to add")
         .field("Category", category_name, true)
         .field("Available Topics", topics.len().to_string(), true)
-        .color(0x7289da);
+        .color(0xb4befe);
 
     let components = vec![CreateActionRow::SelectMenu(select_menu)];
     let response = CreateInteractionResponseMessage::new()
@@ -336,7 +336,7 @@ async fn confirmation(
         .field("Selected Topics", topics.len().to_string(), true)
         .field("Total Feeds", total_feeds.to_string(), true)
         .field("Channels to Create", channels_list, false)
-        .color(0xffa500)
+        .color(0xf9e2af)
         .footer(CreateEmbedFooter::new(
             "Click Confirm to proceed or Cancel to abort",
         ));
@@ -381,9 +381,11 @@ async fn process(
     let embed = CreateEmbed::new()
         .title("Setting Up RSS Feeds")
         .description("Creating channels and adding feeds...")
-        .color(0x00ff00);
+        .color(0x94e2d5);
 
-    let response = CreateInteractionResponseMessage::new().embed(embed);
+    let response = CreateInteractionResponseMessage::new()
+        .embed(embed)
+        .components(vec![]);
 
     interaction
         .create_response(
@@ -480,7 +482,7 @@ async fn process(
         .field("Channels Created", topics.len().to_string(), true)
         .field("Total Feeds Added", total_added.to_string(), true)
         .field("Total Feeds Skipped", total_skipped.to_string(), true)
-        .color(0x00ff00)
+        .color(0xa6e3a1)
         .footer(CreateEmbedFooter::new("RSS feeds are now active"));
 
     for (name, value, inline) in channel_fields {
@@ -535,7 +537,7 @@ async fn cancel(ctx: &Context, interaction: &ComponentInteraction) -> Result<()>
     let embed = CreateEmbed::new()
         .title("Setup Cancelled")
         .description("No changes were made to your server")
-        .color(0xff0000);
+        .color(0xf38ba8);
 
     let response = CreateInteractionResponseMessage::new().embed(embed);
 
@@ -557,7 +559,7 @@ async fn respond_error(
     let embed = CreateEmbed::new()
         .title("Error")
         .description(message)
-        .color(0xff0000);
+        .color(0xf38ba8);
 
     let response = CreateInteractionResponse::Message(
         CreateInteractionResponseMessage::new()
@@ -576,7 +578,7 @@ async fn respond_component_error(
     let embed = CreateEmbed::new()
         .title("Error")
         .description(message)
-        .color(0xff0000);
+        .color(0xf38ba8);
 
     let response = CreateInteractionResponse::Message(
         CreateInteractionResponseMessage::new()
@@ -595,7 +597,7 @@ async fn respond_update_error(
     let embed = CreateEmbed::new()
         .title("Error")
         .description(message)
-        .color(0xff0000);
+        .color(0xf38ba8);
 
     let response = EditInteractionResponse::new()
         .embed(embed)

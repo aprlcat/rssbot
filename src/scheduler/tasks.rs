@@ -292,6 +292,10 @@ async fn post(feed: &DbFeed, entry: &feed_rs::model::Entry, http: &Http) -> Resu
         embed = embed.timestamp(pub_date);
     }
 
+    if let Some(image_url) = extract_image(entry) {
+        embed = embed.image(image_url);
+    }
+
     let footer_text = if let Some(feed_title) = &feed.title {
         parser::clean(feed_title)
     } else if let Ok(parsed_url) = url::Url::parse(&feed.url) {
@@ -323,4 +327,52 @@ async fn post(feed: &DbFeed, entry: &feed_rs::model::Entry, http: &Http) -> Resu
     }
 
     Ok(())
+}
+
+fn extract_image(entry: &feed_rs::model::Entry) -> Option<String> {
+    if let Some(content) = &entry.content {
+        if let Some(body) = &content.body {
+            if let Some(img_url) = extract_image_from_html(body) {
+                return Some(img_url);
+            }
+        }
+    }
+
+    if let Some(summary) = &entry.summary {
+        if let Some(img_url) = extract_image_from_html(&summary.content) {
+            return Some(img_url);
+        }
+    }
+
+    None
+}
+
+fn extract_image_from_html(html: &str) -> Option<String> {
+    use std::sync::LazyLock;
+
+    use regex::Regex;
+
+    static IMG_REGEX: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"<img[^>]+src=["']([^"']+)["'][^>]*>"#).unwrap());
+
+    if let Some(captures) = IMG_REGEX.captures(html) {
+        if let Some(url) = captures.get(1) {
+            let image_url = url.as_str();
+
+            if image_url.starts_with("http") && validate_image_url(image_url) {
+                return Some(image_url.to_string());
+            }
+        }
+    }
+
+    None
+}
+
+fn validate_image_url(url: &str) -> bool {
+    let image_extensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"];
+    let lower_url = url.to_lowercase();
+
+    image_extensions.iter().any(|ext| lower_url.contains(ext))
+        || lower_url.contains("image")
+        || lower_url.contains("img")
 }

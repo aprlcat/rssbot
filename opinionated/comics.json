@@ -1,0 +1,9 @@
+{
+  "topic": "Comics",
+  "feeds": [
+    {
+      "name": "xkcd",
+      "url": "https://xkcd.com/rss.xml"
+    }
+  ]
+}
