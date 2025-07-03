@@ -1,0 +1,29 @@
+{
+  "topic": "Microsoft",
+  "feeds": [
+    {
+      "name": "Microsoft News",
+      "url": "https://blogs.microsoft.com/feed/"
+    },
+    {
+      "name": "Microsoft Command Line",
+      "url": "https://devblogs.microsoft.com/commandline/feed/"
+    },
+    {
+      "name": "Microsoft Azure News",
+      "url": "https://azure.microsoft.com/en-us/blog/feed/"
+    },
+    {
+      "name": "Microsoft Security Blog",
+      "url": "https://www.microsoft.com/security/blog/feed/"
+    },
+    {
+      "name": "Microsoft Developer Blog",
+      "url": "https://devblogs.microsoft.com/feed/"
+    },
+    {
+      "name": "Power Apps Blog",
+      "url": "https://powerapps.microsoft.com/en-us/blog/feed/"
+    }
+  ]
+}

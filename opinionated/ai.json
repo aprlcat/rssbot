@@ -1,0 +1,21 @@
+{
+  "topic": "AI",
+  "feeds": [
+    {
+      "name": "OpenAI News",
+      "url": "https://openai.com/news/rss.xml"
+    },
+    {
+      "name": "Google Research Blog",
+      "url": "https://research.google/blog/rss/"
+    },
+    {
+      "name": "Meta Research",
+      "url": "https://research.facebook.com/feed"
+    },
+    {
+      "name": "NVIDIA AI Blog",
+      "url": "https://developer.nvidia.com/blog/category/artificial-intelligence/feed/"
+    }
+  ]
+}

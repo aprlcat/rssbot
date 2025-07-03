@@ -11,10 +11,7 @@ use serenity::{
 use tokio::time::{Duration, timeout};
 use url::Url;
 
-use crate::{
-    data::Database,
-    util::{parser::parse, webhook::create},
-};
+use crate::{data::Database, util::parser::parse};
 
 pub async fn execute(
     ctx: &Context,
@@ -185,59 +182,31 @@ async fn handle_valid_feed(
     feed: feed_rs::model::Feed,
     content_size: usize,
 ) -> Result<()> {
-    let webhook_future = create(
-        &ctx.http,
+    database
+        .add(
+            guild_id,
+            channel_id,
+            url,
+            feed.title.as_ref().map(|t| t.content.as_str()),
+            None,
+        )
+        .await?;
+
+    let item_count = feed.entries.len();
+
+    let domain = if let Ok(parsed_url) = url::Url::parse(url) {
+        parsed_url.host_str().unwrap_or("Unknown").to_string()
+    } else {
+        "Unknown".to_string()
+    };
+
+    let edit_response = EditInteractionResponse::new().content(format!(
+        "Successfully added `{}` → <#{}> | {} items • {:.1}KB",
+        domain,
         channel_id,
-        &feed
-            .title
-            .as_ref()
-            .map(|t| t.content.as_str())
-            .unwrap_or("RSS Feed"),
-        url,
-    );
-
-    match webhook_future.await {
-        Ok(webhook_url) => {
-            database
-                .add(
-                    guild_id,
-                    channel_id,
-                    url,
-                    feed.title.as_ref().map(|t| t.content.as_str()),
-                    Some(&webhook_url),
-                )
-                .await?;
-
-            let _feed_title = feed
-                .title
-                .as_ref()
-                .map(|t| t.content.as_str())
-                .unwrap_or("RSS Feed");
-            let item_count = feed.entries.len();
-
-            let domain = if let Ok(parsed_url) = url::Url::parse(url) {
-                parsed_url.host_str().unwrap_or("Unknown").to_string()
-            } else {
-                "Unknown".to_string()
-            };
-
-            let edit_response = EditInteractionResponse::new().content(format!(
-                "Successfully added `{}` → <#{}> | {} items • {:.1}KB",
-                domain,
-                channel_id,
-                item_count,
-                content_size as f64 / 1024.0
-            ));
-            command.edit_response(&ctx.http, edit_response).await?;
-        }
-        Err(webhook_error) => {
-            let edit_response = EditInteractionResponse::new().content(format!(
-                "Feed is valid but webhook creation failed: {}\nTry again or check channel \
-                 permissions.",
-                webhook_error
-            ));
-            command.edit_response(&ctx.http, edit_response).await?;
-        }
-    }
+        item_count,
+        content_size as f64 / 1024.0
+    ));
+    command.edit_response(&ctx.http, edit_response).await?;
     Ok(())
 }

@@ -81,36 +81,6 @@ impl Database {
         Ok(feeds)
     }
 
-    pub async fn channel(&self, guild_id: u64, channel_id: u64) -> Result<Vec<Feed>> {
-        let guild_id_i64 = guild_id as i64;
-        let channel_id_i64 = channel_id as i64;
-
-        let rows = sqlx::query!(
-            "SELECT id, guild_id, channel_id, url, title, webhook_url, last_updated, \
-             last_item_date FROM feeds WHERE guild_id = ? AND channel_id = ?",
-            guild_id_i64,
-            channel_id_i64
-        )
-        .fetch_all(&self.pool)
-        .await?;
-
-        let feeds = rows
-            .into_iter()
-            .map(|row| Feed {
-                id: row.id,
-                guild_id: row.guild_id,
-                channel_id: row.channel_id,
-                url: row.url,
-                title: row.title,
-                webhook_url: row.webhook_url,
-                last_updated: row.last_updated,
-                last_item_date: row.last_item_date,
-            })
-            .collect();
-
-        Ok(feeds)
-    }
-
     pub async fn feeds(&self) -> Result<Vec<Feed>> {
         let rows = sqlx::query!(
             "SELECT id, guild_id, channel_id, url, title, webhook_url, last_updated, \

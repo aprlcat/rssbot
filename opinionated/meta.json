@@ -1,0 +1,17 @@
+{
+  "topic": "Meta",
+  "feeds": [
+    {
+      "name": "Meta Newsroom",
+      "url": "https://about.fb.com/feed/"
+    },
+    {
+      "name": "Meta Engineering",
+      "url": "https://engineering.fb.com/feed/"
+    },
+    {
+      "name": "Meta Research",
+      "url": "https://research.facebook.com/feed"
+    }
+  ]
+}

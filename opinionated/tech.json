@@ -1,0 +1,33 @@
+{
+  "topic": "Tech",
+  "feeds": [
+    {
+      "name": "Google Developers Blog",
+      "url": "https://developers.googleblog.com/feeds/posts/default/"
+    },
+    {
+      "name": "Android News",
+      "url": "https://android-developers.googleblog.com/feeds/posts/default"
+    },
+    {
+      "name": "Cloudflare Blog",
+      "url": "https://blog.cloudflare.com/rss/"
+    },
+    {
+      "name": "TechCrunch",
+      "url": "https://techcrunch.com/feed/"
+    },
+    {
+      "name": "The Verge",
+      "url": "https://www.theverge.com/rss/index.xml"
+    },
+    {
+      "name": "Ars Technica",
+      "url": "http://feeds.arstechnica.com/arstechnica/index"
+    },
+    {
+      "name": "Wired",
+      "url": "https://www.wired.com/feed/rss"
+    }
+  ]
+}

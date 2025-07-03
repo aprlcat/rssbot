@@ -1,0 +1,33 @@
+{
+  "topic": "Security",
+  "feeds": [
+    {
+      "name": "Google Project Zero Blog",
+      "url": "https://googleprojectzero.blogspot.com/feeds/posts/default"
+    },
+    {
+      "name": "Maia arson crimew's Blog",
+      "url": "https://maia.crimew.gay/feed.xml"
+    },
+    {
+      "name": "Trail of Bits Blog",
+      "url": "https://blog.trailofbits.com/index.xml"
+    },
+    {
+      "name": "David Buchanan's Blog",
+      "url": "https://www.da.vidbuchanan.co.uk/blog/rss.xml"
+    },
+    {
+      "name": "Krebs on Security",
+      "url": "https://krebsonsecurity.com/feed/"
+    },
+    {
+      "name": "Schneier on Security",
+      "url": "https://www.schneier.com/feed/"
+    },
+    {
+      "name": "CISA Cybersecurity Advisories",
+      "url": "https://www.cisa.gov/uscert/ncas/alerts.xml"
+    }
+  ]
+}

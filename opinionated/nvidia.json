@@ -1,0 +1,17 @@
+{
+  "topic": "NVIDIA",
+  "feeds": [
+    {
+      "name": "NVIDIA Press Release",
+      "url": "https://nvidianews.nvidia.com/cats/press_release.xml"
+    },
+    {
+      "name": "NVIDIA Technical Blog",
+      "url": "https://developer.nvidia.com/blog/feed"
+    },
+    {
+      "name": "NVIDIA AI Blog",
+      "url": "https://developer.nvidia.com/blog/category/artificial-intelligence/feed/"
+    }
+  ]
+}

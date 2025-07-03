@@ -1,0 +1,33 @@
+{
+  "topic": "Cloud",
+  "feeds": [
+    {
+      "name": "AWS News",
+      "url": "https://aws.amazon.com/blogs/aws/feed/"
+    },
+    {
+      "name": "Google Cloud Blog",
+      "url": "https://cloudblog.withgoogle.com/rss"
+    },
+    {
+      "name": "Microsoft Azure News",
+      "url": "https://azure.microsoft.com/en-us/blog/feed/"
+    },
+    {
+      "name": "Cloudflare Blog",
+      "url": "https://blog.cloudflare.com/rss/"
+    },
+    {
+      "name": "Red Hat Blog",
+      "url": "https://www.redhat.com/en/rss/blogs"
+    },
+    {
+      "name": "VMware Cloud Blog",
+      "url": "https://blogs.vmware.com/cloud/feed/"
+    },
+    {
+      "name": "HashiCorp Blog",
+      "url": "https://www.hashicorp.com/blog/feed.xml"
+    }
+  ]
+}

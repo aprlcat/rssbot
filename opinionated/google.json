@@ -1,0 +1,30 @@
+{
+  "topic": "Google",
+  "feeds": [
+    {
+      "name": "Google Developers Blog",
+      "url": "https://developers.googleblog.com/feeds/posts/default/"
+    },
+    {
+      "name": "Google Cloud Blog",
+      "url": "https://cloudblog.withgoogle.com/rss"
+    },
+    {
+      "name": "Google Research Blog",
+      "url": "https://research.google/blog/rss/"
+    },
+    {
+      "name": "Android News",
+      "url": "https://android-developers.googleblog.com/feeds/posts/default"
+    },
+
+    {
+      "name": "Google Security Blog",
+      "url": "https://security.googleblog.com/feeds/posts/default"
+    },
+    {
+      "name": "Chromium Blog",
+      "url": "https://blog.chromium.org/feeds/posts/default"
+    }
+  ]
+}
