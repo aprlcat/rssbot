@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: rssbot-postgres
+    environment:
+      POSTGRES_USER: rssbot
+      POSTGRES_PASSWORD: changemeowo
+      POSTGRES_DB: rssbot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rssbot-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rssbot -d rssbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  rssbot:
+    build: .
+    container_name: rssbot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://rssbot:changemeowo@postgres:5432/rssbot
+      - RUST_LOG=info
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./opinionated:/app/opinionated:ro
+    networks:
+      - rssbot-network
+    restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  rssbot-network:
+    driver: bridge

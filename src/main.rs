@@ -10,9 +10,8 @@ use serenity::{
     async_trait,
     prelude::*,
 };
-use sqlx::SqlitePool;
 use tokio_cron_scheduler::{Job, JobScheduler};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::{data::Database, scheduler::tasks::check};
 
@@ -264,6 +263,32 @@ impl EventHandler for Handler {
     }
 }
 
+async fn retry_database_connection(database_url: &str, max_retries: u32) -> Result<Arc<Database>> {
+    for attempt in 1..=max_retries {
+        match Database::new(database_url).await {
+            Ok(db) => {
+                info!("Successfully connected to database on attempt {}", attempt);
+                return Ok(Arc::new(db));
+            }
+            Err(e) => {
+                if attempt == max_retries {
+                    error!(
+                        "Failed to connect to database after {} attempts: {}",
+                        max_retries, e
+                    );
+                    return Err(e);
+                }
+                warn!(
+                    "Database connection attempt {} failed: {}. Retrying in 5 seconds...",
+                    attempt, e
+                );
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            }
+        }
+    }
+    unreachable!()
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
@@ -277,11 +302,7 @@ async fn main() -> Result<()> {
     info!("Starting RSS Bot...");
 
     let config = Config::load()?;
-    let pool = SqlitePool::connect(&config.database_url).await?;
-
-    sqlx::migrate!("./migrations").run(&pool).await?;
-
-    let database = Arc::new(Database::new(pool));
+    let database = retry_database_connection(&config.database_url, 10).await?;
 
     let mut client = Client::builder(
         &config.token,

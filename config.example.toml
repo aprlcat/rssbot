@@ -3,4 +3,4 @@ token = "your token :3"
 check_interval_minutes = 1
 
 [database]
-url = "sqlite:rss.db"
+url = "postgresql://rssbot:password123@localhost:5432/rssbot"
